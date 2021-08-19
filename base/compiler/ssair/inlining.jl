@@ -952,7 +952,7 @@ function analyze_method!(match::MethodMatch, argtypes::Vector{Any},
     end
 
     # See if there exists a specialization for this method signature
-    mi = specialize_method(match; preexisting=true) # Union{Nothing, MethodInstance}
+    mi = specialize_method(match; preexisting=true)
     if mi === nothing
         et = InliningEdgeTracker(state.et, invokesig)
         effects = info_effects(nothing, match, state)

@@ -434,13 +434,14 @@ static void jl_encode_value_(jl_ircode_state *s, jl_value_t *v, int as_literal) 
     }
 }
 
-static jl_code_info_flags_t code_info_flags(uint8_t inferred, uint8_t propagate_inbounds,
-                                            uint8_t has_fcall, uint8_t inlining, uint8_t constprop)
+static jl_code_info_flags_t code_info_flags(uint8_t inferred, uint8_t propagate_inbounds, uint8_t has_fcall,
+                                            uint8_t noinfer, uint8_t inlining, uint8_t constprop)
 {
     jl_code_info_flags_t flags;
     flags.bits.inferred = inferred;
     flags.bits.propagate_inbounds = propagate_inbounds;
     flags.bits.has_fcall = has_fcall;
+    flags.bits.noinfer = noinfer;
     flags.bits.inlining = inlining;
     flags.bits.constprop = constprop;
     return flags;
@@ -780,8 +781,8 @@ JL_DLLEXPORT jl_array_t *jl_compress_ir(jl_method_t *m, jl_code_info_t *code)
         1
     };
 
-    jl_code_info_flags_t flags = code_info_flags(code->inferred, code->propagate_inbounds,
-                                                 code->has_fcall, code->inlining, code->constprop);
+    jl_code_info_flags_t flags = code_info_flags(code->inferred, code->propagate_inbounds, code->has_fcall,
+                                                 code->noinfer, code->inlining, code->constprop);
     write_uint8(s.s, flags.packed);
     write_uint8(s.s, code->purity.bits);
     write_uint16(s.s, code->inlining_cost);
@@ -880,6 +881,7 @@ JL_DLLEXPORT jl_code_info_t *jl_uncompress_ir(jl_method_t *m, jl_code_instance_t
     code->inferred = flags.bits.inferred;
     code->propagate_inbounds = flags.bits.propagate_inbounds;
     code->has_fcall = flags.bits.has_fcall;
+    code->noinfer = flags.bits.noinfer;
     code->purity.bits = read_uint8(s.s);
     code->inlining_cost = read_uint16(s.s);
 

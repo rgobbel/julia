@@ -2503,7 +2503,8 @@ JL_DLLEXPORT int32_t jl_invoke_api(jl_code_instance_t *codeinst)
     return -1;
 }
 
-JL_DLLEXPORT jl_value_t *jl_normalize_to_compilable_sig(jl_methtable_t *mt, jl_tupletype_t *ti, jl_svec_t *env, jl_method_t *m)
+JL_DLLEXPORT jl_value_t *jl_normalize_to_compilable_sig(jl_methtable_t *mt, jl_tupletype_t *ti, jl_svec_t *env, jl_method_t *m,
+                                                        int return_if_compileable)
 {
     jl_tupletype_t *tt = NULL;
     jl_svec_t *newparams = NULL;
@@ -2527,7 +2528,7 @@ JL_DLLEXPORT jl_value_t *jl_normalize_to_compilable_sig(jl_methtable_t *mt, jl_t
     if (!is_compileable)
         is_compileable = jl_isa_compileable_sig(tt, env, m);
     JL_GC_POP();
-    return is_compileable ? (jl_value_t*)tt : jl_nothing;
+    return (!return_if_compileable || is_compileable) ? (jl_value_t*)tt : jl_nothing;
 }
 
 jl_method_instance_t *jl_normalize_to_compilable_mi(jl_method_instance_t *mi JL_PROPAGATES_ROOT)
@@ -2538,7 +2539,7 @@ jl_method_instance_t *jl_normalize_to_compilable_mi(jl_method_instance_t *mi JL_
     jl_methtable_t *mt = jl_method_get_table(def);
     if ((jl_value_t*)mt == jl_nothing)
         return mi;
-    jl_value_t *compilationsig = jl_normalize_to_compilable_sig(mt, (jl_datatype_t*)mi->specTypes, mi->sparam_vals, def);
+    jl_value_t *compilationsig = jl_normalize_to_compilable_sig(mt, (jl_datatype_t*)mi->specTypes, mi->sparam_vals, def, 1);
     if (compilationsig == jl_nothing || jl_egal(compilationsig, mi->specTypes))
         return mi;
     jl_svec_t *env = NULL;
@@ -2571,7 +2572,7 @@ jl_method_instance_t *jl_method_match_to_mi(jl_method_match_t *match, size_t wor
                 JL_UNLOCK(&mt->writelock);
             }
             else {
-                jl_value_t *tt = jl_normalize_to_compilable_sig(mt, ti, env, m);
+                jl_value_t *tt = jl_normalize_to_compilable_sig(mt, ti, env, m, 1);
                 if (tt != jl_nothing) {
                     JL_GC_PUSH2(&tt, &env);
                     if (!jl_egal(tt, (jl_value_t*)ti)) {

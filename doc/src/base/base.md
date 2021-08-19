@@ -285,6 +285,8 @@ Base.@inline
 Base.@noinline
 Base.@nospecialize
 Base.@specialize
+Base.@noinfer
+Base.@constprop
 Base.gensym
 Base.@gensym
 var"name"
