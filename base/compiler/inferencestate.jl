@@ -641,6 +641,9 @@ function narguments(sv::InferenceState, include_va::Bool=true)
     return nargs
 end
 
+is_call_argument(@nospecialize(x), sv::InferenceState) =
+    isa(x, SlotNumber) && slot_id(x) ≤ narguments(sv)
+
 # IRInterpretationState
 # =====================
 
