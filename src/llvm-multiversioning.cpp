@@ -781,6 +781,7 @@ static Value *rewrite_inst_use(const Stack& stack, Value *replace, Instruction *
             replace = inst;
             continue;
         }
+        assert(val);
         unsigned nargs = val->getNumOperands();
         args.resize(nargs);
         for (unsigned j = 0; j < nargs; j++) {
