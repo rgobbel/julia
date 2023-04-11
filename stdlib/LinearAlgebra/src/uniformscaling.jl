@@ -417,17 +417,16 @@ promote_to_arrays(n,k, ::Type{T}, A, B, C) where {T} =
     (promote_to_arrays_(n[k], T, A), promote_to_arrays_(n[k+1], T, B), promote_to_arrays_(n[k+2], T, C))
 promote_to_arrays(n,k, ::Type{T}, A, B, Cs...) where {T} =
     (promote_to_arrays_(n[k], T, A), promote_to_arrays_(n[k+1], T, B), promote_to_arrays(n,k+2, T, Cs...)...)
-promote_to_array_type(A::Tuple{Vararg{Union{AbstractVecOrMat,UniformScaling,Number}}}) = Matrix
 
 _us2number(A) = A
 _us2number(J::UniformScaling) = J.λ
 
 for (f, _f, dim, name) in ((:hcat, :_hcat, 1, "rows"), (:vcat, :_vcat, 2, "cols"))
     @eval begin
-        @inline $f(A::Union{AbstractVecOrMat,UniformScaling}...) = $_f(A...)
+        @inline $f(A::Union{AbstractArray,UniformScaling}...) = $_f(A...)
         # if there's a Number present, J::UniformScaling must be 1x1-dimensional
-        @inline $f(A::Union{AbstractVecOrMat,UniformScaling,Number}...) = $f(map(_us2number, A)...)
-        function $_f(A::Union{AbstractVecOrMat,UniformScaling,Number}...; array_type = promote_to_array_type(A))
+        @inline $f(A::Union{AbstractArray,UniformScaling,Number}...) = $f(map(_us2number, A)...)
+        function $_f(A::Union{AbstractArray,UniformScaling,Number}...; array_type = promote_to_array_type(A))
             n = -1
             for a in A
                 if !isa(a, UniformScaling)
@@ -445,9 +444,9 @@ for (f, _f, dim, name) in ((:hcat, :_hcat, 1, "rows"), (:vcat, :_vcat, 2, "cols"
     end
 end
 
-hvcat(rows::Tuple{Vararg{Int}}, A::Union{AbstractVecOrMat,UniformScaling}...) = _hvcat(rows, A...)
-hvcat(rows::Tuple{Vararg{Int}}, A::Union{AbstractVecOrMat,UniformScaling,Number}...) = _hvcat(rows, A...)
-function _hvcat(rows::Tuple{Vararg{Int}}, A::Union{AbstractVecOrMat,UniformScaling,Number}...; array_type = promote_to_array_type(A))
+hvcat(rows::Tuple{Vararg{Int}}, A::Union{AbstractArray,UniformScaling}...) = _hvcat(rows, A...)
+hvcat(rows::Tuple{Vararg{Int}}, A::Union{AbstractArray,UniformScaling,Number}...) = _hvcat(rows, A...)
+function _hvcat(rows::Tuple{Vararg{Int}}, A::Union{AbstractArray,UniformScaling,Number}...; array_type = promote_to_array_type(A))
     require_one_based_indexing(A...)
     nr = length(rows)
     sum(rows) == length(A) || throw(ArgumentError("mismatch between row sizes and number of arguments"))

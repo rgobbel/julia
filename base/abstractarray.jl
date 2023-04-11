@@ -1982,19 +1982,18 @@ julia> cat(1, [2], [3;;]; dims=Val(2))
 @inline cat(A...; dims) = _cat(dims, A...)
 # `@constprop :aggressive` allows `catdims` to be propagated as constant improving return type inference
 @constprop :aggressive _cat(catdims, A::AbstractArray{T}...) where {T} = _cat_t(catdims, T, A...)
+const ArrayConcatGroup = Union{Number, AbstractArray}
 
 # The specializations for 1 and 2 inputs are important
 # especially when running with --inline=no, see #11158
-# The specializations for Union{AbstractVecOrMat,Number} are necessary
-# to have more specialized methods here than in LinearAlgebra/uniformscaling.jl
 vcat(A::AbstractArray) = cat(A; dims=Val(1))
 vcat(A::AbstractArray, B::AbstractArray) = cat(A, B; dims=Val(1))
 vcat(A::AbstractArray...) = cat(A...; dims=Val(1))
-vcat(A::Union{AbstractVecOrMat,Number}...) = cat(A...; dims=Val(1))
+vcat(A::Union{AbstractArray,Number}...) = cat(A...; dims=Val(1))
 hcat(A::AbstractArray) = cat(A; dims=Val(2))
 hcat(A::AbstractArray, B::AbstractArray) = cat(A, B; dims=Val(2))
 hcat(A::AbstractArray...) = cat(A...; dims=Val(2))
-hcat(A::Union{AbstractVecOrMat,Number}...) = cat(A...; dims=Val(2))
+hcat(A::Union{AbstractArray,Number}...) = cat(A...; dims=Val(2))
 
 typed_vcat(T::Type, A::AbstractArray) = _cat_t(Val(1), T, A)
 typed_vcat(T::Type, A::AbstractArray, B::AbstractArray) = _cat_t(Val(1), T, A, B)
@@ -2144,8 +2143,6 @@ end
 
 hvcat(rows::Tuple{Vararg{Int}}, xs::Number...) = typed_hvcat(promote_typeof(xs...), rows, xs...)
 hvcat(rows::Tuple{Vararg{Int}}, xs...) = typed_hvcat(promote_eltypeof(xs...), rows, xs...)
-# the following method is needed to provide a more specific one compared to LinearAlgebra/uniformscaling.jl
-hvcat(rows::Tuple{Vararg{Int}}, xs::Union{AbstractVecOrMat,Number}...) = typed_hvcat(promote_eltypeof(xs...), rows, xs...)
 
 function typed_hvcat(::Type{T}, rows::Tuple{Vararg{Int}}, xs::Number...) where T
     nr = length(rows)
