@@ -22,22 +22,6 @@ JL_DLLEXPORT int jl_is_valid_oc_argtype(jl_tupletype_t *argt, jl_method_t *sourc
     return 1;
 }
 
-// TODO: merge this with jl_argtype_with_function
-static jl_value_t *prepend_type(jl_value_t *t0, jl_tupletype_t *t)
-{
-    jl_svec_t *sig_args = NULL;
-    JL_GC_PUSH1(&sig_args);
-    size_t nsig = 1 + jl_svec_len(t->parameters);
-    sig_args = jl_alloc_svec_uninit(nsig);
-    jl_svecset(sig_args, 0, t0);
-    for (size_t i = 0; i < nsig-1; ++i) {
-        jl_svecset(sig_args, 1+i, jl_tparam(t, i));
-    }
-    jl_value_t *sigtype = jl_apply_tuple_type(sig_args);
-    JL_GC_POP();
-    return sigtype;
-}
-
 static jl_opaque_closure_t *new_opaque_closure(jl_tupletype_t *argt, jl_value_t *rt_lb, jl_value_t *rt_ub,
     jl_value_t *source_, jl_value_t *captures, int do_compile)
 {
@@ -58,7 +42,7 @@ static jl_opaque_closure_t *new_opaque_closure(jl_tupletype_t *argt, jl_value_t 
         jl_error("Argument type tuple has too few required arguments for method");
     jl_value_t *sigtype = NULL;
     JL_GC_PUSH1(&sigtype);
-    sigtype = prepend_type(jl_typeof(captures), argt);
+    sigtype = jl_argtype_with_function(jl_typeof(captures), (jl_value_t*)argt);
 
     jl_value_t *oc_type JL_ALWAYS_LEAFTYPE;
     oc_type = jl_apply_type2((jl_value_t*)jl_opaque_closure_type, (jl_value_t*)argt, rt_ub);
@@ -132,7 +116,7 @@ JL_DLLEXPORT jl_opaque_closure_t *jl_new_opaque_closure_from_code_info(jl_tuplet
     root = (jl_value_t*)meth;
     meth->primary_world = jl_current_task->world_age;
 
-    sigtype = prepend_type(jl_typeof(env), argt);
+    sigtype = jl_argtype_with_function(jl_typeof(env), (jl_value_t*)argt);
     jl_method_instance_t *mi = jl_specializations_get_linfo((jl_method_t*)root, sigtype, jl_emptysvec);
     inst = jl_new_codeinst(mi, rt_ub, NULL, (jl_value_t*)ci,
         0, meth->primary_world, -1, 0, 0, jl_nothing, 0);
@@ -149,26 +133,6 @@ JL_CALLABLE(jl_new_opaque_closure_jlcall)
         jl_error("new_opaque_closure: Not enough arguments");
     return (jl_value_t*)jl_new_opaque_closure((jl_tupletype_t*)args[0],
         args[1], args[2], args[3], &args[4], nargs-4, 1);
-}
-
-
-// check whether the specified number of arguments is compatible with the
-// specified number of parameters of the tuple type
-STATIC_INLINE int jl_tupletype_length_compat(jl_value_t *v, size_t nargs) JL_NOTSAFEPOINT
-{
-    v = jl_unwrap_unionall(v);
-    assert(jl_is_tuple_type(v));
-    size_t nparams = jl_nparams(v);
-    if (nparams == 0)
-        return nargs == 0;
-    jl_value_t *va = jl_tparam(v,nparams-1);
-    if (jl_is_vararg(va)) {
-        jl_value_t *len = jl_unwrap_vararg_num(va);
-        if (len &&jl_is_long(len))
-            return nargs == nparams - 1 + jl_unbox_long(len);
-        return nargs >= nparams - 1;
-    }
-    return nparams == nargs;
 }
 
 JL_CALLABLE(jl_f_opaque_closure_call)

@@ -1472,6 +1472,26 @@ int jl_typemap_intersection_visitor(jl_typemap_t *a, int offs, struct typemap_in
 JL_DLLEXPORT size_t (jl_svec_len)(jl_svec_t *t) JL_NOTSAFEPOINT;
 JL_DLLEXPORT jl_value_t *jl_svec_ref(jl_svec_t *t JL_PROPAGATES_ROOT, ssize_t i);
 
+// check whether the specified number of arguments is compatible with the
+// specified number of parameters of the tuple type
+STATIC_INLINE int jl_tupletype_length_compat(jl_value_t *v, size_t nargs) JL_NOTSAFEPOINT
+{
+    v = jl_unwrap_unionall(v);
+    assert(jl_is_tuple_type(v));
+    size_t nparams = jl_nparams(v);
+    if (nparams == 0)
+        return nargs == 0;
+    jl_value_t *va = jl_tparam(v,nparams-1);
+    if (jl_is_vararg(va)) {
+        jl_value_t *len = jl_unwrap_vararg_num(va);
+        if (len &&jl_is_long(len))
+            return nargs == nparams - 1 + jl_unbox_long(len);
+        return nargs >= nparams - 1;
+    }
+    return nparams == nargs;
+}
+
+JL_DLLEXPORT jl_value_t *jl_argtype_with_function(jl_value_t *f, jl_value_t *types0);
 
 JL_DLLEXPORT unsigned jl_special_vector_alignment(size_t nfields, jl_value_t *field_type);
 

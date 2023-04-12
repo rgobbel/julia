@@ -2753,7 +2753,7 @@ JL_DLLEXPORT int jl_compile_hint(jl_tupletype_t *types)
 }
 
 // add type of `f` to front of argument tuple type
-static jl_value_t *jl_argtype_with_function(jl_function_t *f, jl_value_t *types0)
+jl_value_t *jl_argtype_with_function(jl_value_t *f, jl_value_t *types0)
 {
     jl_value_t *types = jl_unwrap_unionall(types0);
     size_t l = jl_nparams(types);
@@ -3058,7 +3058,7 @@ jl_value_t *jl_gf_invoke(jl_value_t *types0, jl_value_t *gf, jl_value_t **args, 
     size_t world = jl_current_task->world_age;
     jl_value_t *types = NULL;
     JL_GC_PUSH1(&types);
-    types = jl_argtype_with_function(gf, types0);
+    types = jl_argtype_with_function((jl_value_t*)gf, types0);
     jl_method_t *method = (jl_method_t*)jl_gf_invoke_lookup(types, jl_nothing, world);
     JL_GC_PROMISE_ROOTED(method);
 
