@@ -3218,9 +3218,10 @@ static int ml_matches_visitor(jl_typemap_entry_t *ml, struct typemap_intersectio
     return 1;
 }
 
-static int ml_mtable_visitor(jl_methtable_t *mt, void *env)
+static int ml_mtable_visitor(jl_methtable_t *mt, void *closure0)
 {
-    return jl_typemap_intersection_visitor(jl_atomic_load_relaxed(&mt->defs), jl_cachearg_offset(mt), (struct typemap_intersection_env*)env);
+    struct typemap_intersection_env* env = (struct typemap_intersection_env*)closure0;
+    return jl_typemap_intersection_visitor(jl_atomic_load_relaxed(&mt->defs), jl_cachearg_offset(mt), env);
 }
 
 // This is the collect form of calling jl_typemap_intersection_visitor
@@ -3318,7 +3319,7 @@ static jl_value_t *ml_matches(jl_methtable_t *mt,
                 return env.t;
             }
         }
-        if (!jl_typemap_intersection_visitor(jl_atomic_load_relaxed(&mt->defs), jl_cachearg_offset(mt), &env.match)) {
+        if (!ml_mtable_visitor(mt, &env.match)) {
             JL_GC_POP();
             return jl_nothing;
         }
