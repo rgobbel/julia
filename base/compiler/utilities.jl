@@ -339,7 +339,7 @@ end
 # types #
 #########
 
-function singleton_type(@nospecialize(ft))
+@noinfer function singleton_type(@nospecialize(ft))
     ft = widenslotwrapper(ft)
     if isa(ft, Const)
         return ft.val
@@ -351,7 +351,7 @@ function singleton_type(@nospecialize(ft))
     return nothing
 end
 
-function maybe_singleton_const(@nospecialize(t))
+@noinfer function maybe_singleton_const(@nospecialize(t))
     if isa(t, DataType)
         if issingletontype(t)
             return Const(t.instance)
